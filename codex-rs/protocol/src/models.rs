@@ -48,7 +48,16 @@ pub enum ResponseItem {
         content: Vec<ContentItem>,
     },
     Reasoning {
-        #[serde(default)]
+        // The Responses API returns an `id` for reasoning items on the stream.
+        // If we include that `id` verbatim on subsequent requests, OpenAI
+        // treats it as a reference to a previously stored item which requires
+        // `store=true` on the prior turn. Since Codex defaults to `store=false`,
+        // sending the `id` causes 400 "Item with id 'rs_…' not found" errors.
+        //
+        // Keep deserializing the field from SSE, but never serialize it back
+        // into the request payload so we don't create implicit stored-item
+        // references.
+        #[serde(default, skip_serializing)]
         id: String,
         summary: Vec<ReasoningItemReasoningSummary>,
         #[serde(default, skip_serializing_if = "should_serialize_reasoning_content")]
